@@ -1,36 +1,28 @@
 /**
  * @file useSensorLogic.js
  * @brief Business Logic Layer (ViewModel) for Medical Sensor interaction.
- * @version 1.1.0
+ * @version 1.4.0 (Multi-Channel Support)
+ * @date 2023-11-28
  * 
  * @section arch_sec Architecture
  * This hook acts as the **Controller/ViewModel**. It manages:
  * 1.  **Connection State Machine:** (Disconnected -> Connecting -> Configuring -> Streaming).
  * 2.  **Protocol Handshake:** Orchestrates the sequence of commands defined in `BleProtocol.js`.
- * 3.  **Data Pipeline:** Decouples high-frequency BLE interrupts from low-frequency UI updates using a circular buffer.
+ * 3.  **Generic Data Pipeline:** Decouples high-frequency BLE interrupts from low-frequency UI updates using multiple circular buffers.
  * 
- * @section handshake_sec Connection Handshake Sequence
- * When `connectAndStart` is called, the following synchronous sequence occurs:
- * 1.  **Connect** to device.
- * 2.  **Discover** Services/Characteristics.
- * 3.  **Write** `CMD_SYS_SETTING_SET` (0x08) -> Configures Raw Mode.
- * 4.  **Write** `CMD_SYS_PARAM_READ` (0x01) -> Verifies configuration.
- * 5.  **Subscribe** to Notification Characteristic.
- * 6.  **Write** `CMD_SCAN_START` (0x18) -> Triggers data stream.
- * 
- * @section perf_sec Performance Strategy
- * The sensor sends data every ~5ms (200Hz). Updating React State (`useState`) at 200Hz 
- * would freeze the UI.
+ * @section perf_sec Performance Strategy (Multi-Channel)
+ * The sensor sends data packets containing multiple 16-bit values at ~200Hz. 
+ * Rendering 6+ charts at 200Hz is impossible on mobile.
  * 
  * **Solution:**
- * - Incoming data is pushed immediately to a `useRef` array (Synchronous, Non-Blocking, No Re-render).
- * - A `setInterval` timer runs every 25ms (40Hz).
- * - The timer flushes the `useRef` buffer into the React State (`useState`).
- * - Result: Smooth UI updates at 40fps while capturing 200fps data.
+ * - The hook maintains a `dataBuffersRef` object, where keys correspond to the data index in the packet (0, 1, 2...).
+ * - Incoming data is split and pushed to these buffers synchronously (Non-Blocking).
+ * - A 40Hz timer flushes all active buffers into the React State (`channelData`).
+ * - This allows the UI to render N distinct charts smoothly, regardless of the sensor's data format.
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { BleManager, Device } from 'react-native-ble-plx';
+import { BleManager } from 'react-native-ble-plx';
 import { 
   SENSOR_UUIDS, 
   COMMANDS, 
@@ -46,7 +38,7 @@ import {
  * @return {Object} An object containing:
  * - `device` {Device}: The connected BLE device instance.
  * - `status` {string}: Current user-facing status message.
- * - `ecgData` {Array<number>}: Array of ECG values for visualization.
+ * - `channelData` {Object}: Dictionary of data arrays, keyed by channel index (e.g., { '0': [...], '1': [...] }).
  * - `bleManager` {BleManager}: The raw manager instance (for scanning).
  * - `connectAndStart` {Function}: Trigger connection sequence.
  * - `stopAndDisconnect` {Function}: Trigger cleanup sequence.
@@ -54,54 +46,47 @@ import {
 export default function useSensorLogic() {
   /** 
    * @brief Singleton BleManager instance.
-   * Instantiated once via useRef to persist across re-renders without recreation.
    */
   const bleManager = useRef(new BleManager()).current;
 
-  /** @brief The currently connected peripheral. Null if disconnected. */
+  /** @brief The currently connected peripheral. */
   const [device, setDevice] = useState(null);
 
-  /** @brief Human-readable status string for the Dashboard UI. */
+  /** @brief Human-readable status string. */
   const [status, setStatus] = useState('Disconnected');
 
   /** 
-   * @brief Visualization State.
-   * This is the "Truth" for the UI Chart. It is updated at 40Hz.
+   * @brief Visualization State (Generic).
+   * Stores arrays of data for each channel detected in the packet.
+   * Structure: { 0: [100, 102...], 1: [500, 501...], ... }
    */
-  const [ecgData, setEcgData] = useState([]); 
+  const [channelData, setChannelData] = useState({}); 
   
   /**
-   * @brief High-Speed Intermediate Buffer.
-   * @details Stores raw data points arriving from the BLE stack.
-   * We use `useRef` because modifying this does NOT trigger a React component re-render.
+   * @brief High-Speed Intermediate Buffers.
+   * Mirrors the structure of channelData but handles high-frequency pushes.
    */
-  const dataBufferRef = useRef([]);
+  const dataBuffersRef = useRef({});
 
   /**
    * @brief Executes the RumaH Protocol Connection Handshake.
-   * 
-   * @details This function performs the 4-step initialization sequence required by the firmware.
-   * If any step fails, the `catch` block is triggered and the connection is aborted.
-   * 
    * @param {Object} scannedDevice - The native device object returned by the Scanner.
-   * @see BleProtocol.js for command definitions.
    */
   const connectAndStart = async (scannedDevice) => {
     try {
       setStatus('Connecting...');
       
-      // Step 1: Low-level BLE Connection
       const connectedDevice = await bleManager.connectToDevice(scannedDevice.id);
       setDevice(connectedDevice);
       
       setStatus('Discovering Services...');
-      // Crucial: Android requires service discovery before characteristics can be accessed.
       await connectedDevice.discoverAllServicesAndCharacteristics();
 
       // Step 2: Configure System Settings (Command 0x08)
-      // We request RAW_ONLY mode to get waveform data.
+      // -- Modified: Uses defaults: Mode=RAW, Rate="200", Sim=False
       setStatus('Configuring Settings...');
-      const settingsPayload = buildSysSettingCmd(SYS_MODES.RAW_ONLY, 200);
+      // Mode: RAW_ONLY, Rate: "200" (default), Simulated: TRUE
+      const settingsPayload = buildSysSettingCmd(SYS_MODES.RAW_ONLY, "200", true);;
       await connectedDevice.writeCharacteristicWithResponseForService(
         SENSOR_UUIDS.SERVICE,
         SENSOR_UUIDS.WRITE_CHAR,
@@ -109,7 +94,6 @@ export default function useSensorLogic() {
       );
 
       // Step 3: Verify Parameters (Command 0x01)
-      // Good practice to ensure the settings stuck, though we ignore the response payload in this MVP.
       setStatus('Verifying Parameters...');
       const readPayload = buildSimpleCmd(COMMANDS.CMD_SYS_PARAM_READ);
       await connectedDevice.writeCharacteristicWithResponseForService(
@@ -119,7 +103,6 @@ export default function useSensorLogic() {
       );
 
       // Step 4: Subscribe to Data Stream
-      // We must subscribe BEFORE sending the Start command to ensure we don't miss the first packets.
       setStatus('Subscribing to Stream...');
       connectedDevice.monitorCharacteristicForService(
         SENSOR_UUIDS.SERVICE,
@@ -127,16 +110,13 @@ export default function useSensorLogic() {
         (error, characteristic) => {
           if (error) {
             console.error('Notification Error:', error);
-            // Note: In production, consider triggering a disconnect here.
             return;
           }
-          // Delegate data processing to a separate function to keep this logic clean.
           handleIncomingData(characteristic.value);
         }
       );
 
       // Step 5: Start Scanning (Command 0x18)
-      // This tells the firmware to actually begin pushing 0x8E packets.
       setStatus('Starting Scan...');
       const startPayload = buildSimpleCmd(COMMANDS.CMD_SCAN_START);
       await connectedDevice.writeCharacteristicWithResponseForService(
@@ -150,47 +130,38 @@ export default function useSensorLogic() {
     } catch (error) {
       console.error('Connection Sequence Failed:', error);
       setStatus('Error');
-      // Optional: Auto-disconnect on failure to reset state
-      if (scannedDevice) {
-          // scannedDevice.cancelConnection(); // Uncomment if desired
-      }
     }
   };
 
   /**
-   * @brief Handles raw Base64 payloads from the BLE callback.
+   * @brief Handles generic data packets (1 to N channels).
    * 
    * @details 
-   * 1. Decodes Base64 using `BleProtocol.parseNotification`.
-   * 2. Extracts specifically the ECG channel (can be modified to store PPG).
-   * 3. Pushes data to `dataBufferRef` (Non-blocking).
-   * 
-   * @param {string} base64Value - The raw string from `react-native-ble-plx`.
+   * 1. Parses the packet into a flat array of integers.
+   * 2. Iterates through the array.
+   * 3. Pushes each value to its corresponding buffer index.
+   *    (e.g., Value at index 0 goes to Buffer[0]).
    */
   const handleIncomingData = (base64Value) => {
-    const parsedPoints = parseNotification(base64Value);
+    const values = parseNotification(base64Value);
     
-    if (parsedPoints) {
-      // Map the array of objects to a flat array of ECG values
-      const newEcgPoints = parsedPoints.map(p => p.ecg);
-      
-      // Mutate the Ref array directly (High performance)
-      dataBufferRef.current.push(...newEcgPoints);
+    if (values && values.length > 0) {
+      values.forEach((val, index) => {
+        // Initialize buffer for this channel if it doesn't exist
+        if (!dataBuffersRef.current[index]) {
+          dataBuffersRef.current[index] = [];
+        }
+        // Push value
+        dataBuffersRef.current[index].push(val);
+      });
     }
   };
 
   /**
    * @brief Gracefully terminates the session.
-   * 
-   * @details 
-   * 1. Attempts to send `CMD_SCAN_STOP` (0x1F) to put the firmware in IDLE mode.
-   * 2. Cancels the native BLE connection.
-   * 3. Resets local state.
    */
   const stopAndDisconnect = async () => {
     if (device) {
-      // Best-effort attempt to tell the device to stop. 
-      // Wrapped in try/catch because if the link is already broken, this will throw.
       try {
         const stopPayload = buildSimpleCmd(COMMANDS.CMD_SCAN_STOP);
         await device.writeCharacteristicWithResponseForService(
@@ -198,14 +169,14 @@ export default function useSensorLogic() {
             SENSOR_UUIDS.WRITE_CHAR, 
             stopPayload
         );
-      } catch (ignored) {
-          console.warn("Could not send STOP command, force disconnecting.");
-      }
+      } catch (ignored) {}
 
       await device.cancelConnection();
       setDevice(null);
       setStatus('Disconnected');
-      // Note: we do not clear ecgData here so the user can see the last chart state.
+      // Clear data on disconnect to reset views
+      setChannelData({});
+      dataBuffersRef.current = {};
     }
   };
 
@@ -213,35 +184,45 @@ export default function useSensorLogic() {
    * @brief The "Game Loop" / UI Refresh Timer.
    * 
    * @details 
-   * Runs every 25ms.
-   * Checks if `dataBufferRef` has accumulated any new points.
-   * If yes, moves them to React State (`setEcgData`) and clears the buffer.
-   * Maintains a rolling window of the last 100 points to keep the Chart component lightweight.
+   * Runs every 25ms (40Hz).
+   * Iterates through ALL active channel buffers.
+   * If a buffer has data, updates the React State for that channel.
    */
   useEffect(() => {
     const interval = setInterval(() => {
-      if (dataBufferRef.current.length > 0) {
-        setEcgData(prev => {
-          // Combine previous state + new buffered data
-          const updated = [...prev, ...dataBufferRef.current];
-          // Optimization: Only keep the last 100 points. 
-          // Rendering 1000s of points on a mobile chart causes frame drops.
-          return updated.slice(-100);
-        });
-        
-        // Reset the high-speed buffer
-        dataBufferRef.current = [];
-      }
-    }, 25); // 25ms = 40 Updates per second
+      const keys = Object.keys(dataBuffersRef.current);
+      
+      if (keys.length > 0) {
+        setChannelData(prev => {
+          const newState = { ...prev };
+          let hasChanges = false;
 
-    // Cleanup: Stop the timer when the component unmounts
+          keys.forEach(key => {
+            const newPoints = dataBuffersRef.current[key];
+            
+            if (newPoints && newPoints.length > 0) {
+              const prevPoints = newState[key] || [];
+              // Append and slice to keep last 100 points
+              newState[key] = [...prevPoints, ...newPoints].slice(-100);
+              
+              // Clear the high-speed buffer for this key
+              dataBuffersRef.current[key] = [];
+              hasChanges = true;
+            }
+          });
+
+          return hasChanges ? newState : prev;
+        });
+      }
+    }, 25); 
+
     return () => clearInterval(interval);
   }, []);
 
   return {
     device,
     status,
-    ecgData,
+    channelData, // Exposing the generic dictionary
     bleManager, 
     connectAndStart,
     stopAndDisconnect
