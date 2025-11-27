@@ -1,0 +1,142 @@
+\doxysection{src/screens/\+Dashboard\+Screen.js File Reference}
+\hypertarget{_dashboard_screen_8js}{}\label{_dashboard_screen_8js}\index{src/screens/DashboardScreen.js@{src/screens/DashboardScreen.js}}
+
+
+Main UI orchestrating scanning and visualization.  
+
+
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+function default \mbox{\hyperlink{_dashboard_screen_8js_a0de6f234d222476cf1dadf932395e8ce}{Dashboard\+Screen}} ()
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{_dashboard_screen_8js_a953be46b94f595d839e88a6d3d270309}{import}} \mbox{\hyperlink{_dashboard_screen_8js_a8e6a862a904cf8b07c69fae7c44a1a04}{React}}
+\item 
+import \mbox{\hyperlink{_dashboard_screen_8js_a953be46b94f595d839e88a6d3d270309}{import}}
+\item 
+\mbox{\hyperlink{_dashboard_screen_8js_a953be46b94f595d839e88a6d3d270309}{import}} use\+Sensor\+Logic from hooks \mbox{\hyperlink{_dashboard_screen_8js_adfd7344a28494789398d8053515ed117}{use\+Sensor\+Logic}}
+\item 
+\mbox{\hyperlink{_dashboard_screen_8js_a953be46b94f595d839e88a6d3d270309}{import}} Sensor\+Chart from components \mbox{\hyperlink{_dashboard_screen_8js_a11da5497388179da851ec82ee9bda5b5}{Sensor\+Chart}}
+\item 
+const \mbox{\hyperlink{_dashboard_screen_8js_a66a53e42c69ca6e92f8c7dc78b679fbd}{styles}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Main UI orchestrating scanning and visualization. 
+
+
+
+Definition in file \mbox{\hyperlink{_dashboard_screen_8js_source}{Dashboard\+Screen.\+js}}.
+
+
+
+\label{doc-func-members}
+\Hypertarget{_dashboard_screen_8js_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{_dashboard_screen_8js_a0de6f234d222476cf1dadf932395e8ce}\index{DashboardScreen.js@{DashboardScreen.js}!DashboardScreen@{DashboardScreen}}
+\index{DashboardScreen@{DashboardScreen}!DashboardScreen.js@{DashboardScreen.js}}
+\doxysubsubsection{\texorpdfstring{DashboardScreen()}{DashboardScreen()}}
+{\footnotesize\ttfamily \label{_dashboard_screen_8js_a0de6f234d222476cf1dadf932395e8ce} 
+function default Dashboard\+Screen (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+Requests Android Permissions.
+
+Starts BLE Scanning.
+
+Handles device selection from list. 
+\begin{DoxyParams}{Parameters}
+{\em \{\+Object\}} & item -\/ The BLE device.\\
+\hline
+\end{DoxyParams}
+
+
+Definition at line \mbox{\hyperlink{_dashboard_screen_8js_source_l00021}{21}} of file \mbox{\hyperlink{_dashboard_screen_8js_source}{Dashboard\+Screen.\+js}}.
+
+
+
+\label{doc-var-members}
+\Hypertarget{_dashboard_screen_8js_doc-var-members}
+\doxysubsection{Variable Documentation}
+\Hypertarget{_dashboard_screen_8js_a953be46b94f595d839e88a6d3d270309}\index{DashboardScreen.js@{DashboardScreen.js}!import@{import}}
+\index{import@{import}!DashboardScreen.js@{DashboardScreen.js}}
+\doxysubsubsection{\texorpdfstring{import}{import}}
+{\footnotesize\ttfamily \label{_dashboard_screen_8js_a953be46b94f595d839e88a6d3d270309} 
+import import}
+
+{\bfseries Initial value\+:}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\{\ }
+\DoxyCodeLine{\ \ \ \ SafeAreaView,\ }
+\DoxyCodeLine{\ \ \ \ View,\ }
+\DoxyCodeLine{\ \ \ \ Text,\ }
+\DoxyCodeLine{\ \ \ \ Button,\ }
+\DoxyCodeLine{\ \ \ \ FlatList,\ }
+\DoxyCodeLine{\ \ \ \ TouchableOpacity,\ }
+\DoxyCodeLine{\ \ \ \ StyleSheet,\ }
+\DoxyCodeLine{\ \ \ \ PermissionsAndroid,}
+\DoxyCodeLine{\ \ \ \ Platform}
+\DoxyCodeLine{\}\ from\ \textcolor{stringliteral}{'react-\/native'}}
+
+\end{DoxyCode}
+
+
+Definition at line \mbox{\hyperlink{_dashboard_screen_8js_source_l00007}{7}} of file \mbox{\hyperlink{_dashboard_screen_8js_source}{Dashboard\+Screen.\+js}}.
+
+\Hypertarget{_dashboard_screen_8js_a8e6a862a904cf8b07c69fae7c44a1a04}\index{DashboardScreen.js@{DashboardScreen.js}!React@{React}}
+\index{React@{React}!DashboardScreen.js@{DashboardScreen.js}}
+\doxysubsubsection{\texorpdfstring{React}{React}}
+{\footnotesize\ttfamily \label{_dashboard_screen_8js_a8e6a862a904cf8b07c69fae7c44a1a04} 
+\mbox{\hyperlink{_dashboard_screen_8js_a953be46b94f595d839e88a6d3d270309}{import}} React}
+
+
+
+Definition at line \mbox{\hyperlink{_dashboard_screen_8js_source_l00006}{6}} of file \mbox{\hyperlink{_dashboard_screen_8js_source}{Dashboard\+Screen.\+js}}.
+
+\Hypertarget{_dashboard_screen_8js_a11da5497388179da851ec82ee9bda5b5}\index{DashboardScreen.js@{DashboardScreen.js}!SensorChart@{SensorChart}}
+\index{SensorChart@{SensorChart}!DashboardScreen.js@{DashboardScreen.js}}
+\doxysubsubsection{\texorpdfstring{SensorChart}{SensorChart}}
+{\footnotesize\ttfamily \label{_dashboard_screen_8js_a11da5497388179da851ec82ee9bda5b5} 
+\mbox{\hyperlink{_dashboard_screen_8js_a953be46b94f595d839e88a6d3d270309}{import}} Sensor\+Chart from components Sensor\+Chart}
+
+
+
+Definition at line \mbox{\hyperlink{_dashboard_screen_8js_source_l00019}{19}} of file \mbox{\hyperlink{_dashboard_screen_8js_source}{Dashboard\+Screen.\+js}}.
+
+\Hypertarget{_dashboard_screen_8js_a66a53e42c69ca6e92f8c7dc78b679fbd}\index{DashboardScreen.js@{DashboardScreen.js}!styles@{styles}}
+\index{styles@{styles}!DashboardScreen.js@{DashboardScreen.js}}
+\doxysubsubsection{\texorpdfstring{styles}{styles}}
+{\footnotesize\ttfamily \label{_dashboard_screen_8js_a66a53e42c69ca6e92f8c7dc78b679fbd} 
+const styles}
+
+{\bfseries Initial value\+:}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{=\ StyleSheet.create(\{}
+\DoxyCodeLine{\ \ container:\ \{\ flex:\ 1,\ backgroundColor:\ \textcolor{stringliteral}{'\#FFF'}\ \},}
+\DoxyCodeLine{\ \ header:\ \{\ padding:\ 20,\ borderBottomWidth:\ 1,\ borderColor:\ \textcolor{stringliteral}{'\#EEE'},\ flexDirection:\ \textcolor{stringliteral}{'row'},\ justifyContent:\ \textcolor{stringliteral}{'space-\/between'},\ alignItems:\ \textcolor{stringliteral}{'center'}\ \},}
+\DoxyCodeLine{\ \ statusText:\ \{\ fontSize:\ 16,\ fontWeight:\ \textcolor{stringliteral}{'bold'}\ \},}
+\DoxyCodeLine{\ \ chartContainer:\ \{\ padding:\ 10,\ flex:\ 1,\ justifyContent:\ \textcolor{stringliteral}{'center'}\ \},}
+\DoxyCodeLine{\ \ listContainer:\ \{\ padding:\ 20,\ flex:\ 1\ \},}
+\DoxyCodeLine{\ \ deviceItem:\ \{\ padding:\ 15,\ borderBottomWidth:\ 1,\ borderColor:\ \textcolor{stringliteral}{'\#eee'},\ backgroundColor:\ \textcolor{stringliteral}{'\#f9f9f9'},\ marginBottom:\ 5\ \},}
+\DoxyCodeLine{\ \ deviceName:\ \{\ fontSize:\ 16,\ fontWeight:\ \textcolor{stringliteral}{'bold'}\ \},}
+\DoxyCodeLine{\ \ deviceId:\ \{\ fontSize:\ 12,\ color:\ \textcolor{stringliteral}{'gray'}\ \}}
+\DoxyCodeLine{\})}
+
+\end{DoxyCode}
+
+
+Definition at line \mbox{\hyperlink{_dashboard_screen_8js_source_l00125}{125}} of file \mbox{\hyperlink{_dashboard_screen_8js_source}{Dashboard\+Screen.\+js}}.
+
+\Hypertarget{_dashboard_screen_8js_adfd7344a28494789398d8053515ed117}\index{DashboardScreen.js@{DashboardScreen.js}!useSensorLogic@{useSensorLogic}}
+\index{useSensorLogic@{useSensorLogic}!DashboardScreen.js@{DashboardScreen.js}}
+\doxysubsubsection{\texorpdfstring{useSensorLogic}{useSensorLogic}}
+{\footnotesize\ttfamily \label{_dashboard_screen_8js_adfd7344a28494789398d8053515ed117} 
+\mbox{\hyperlink{_dashboard_screen_8js_a953be46b94f595d839e88a6d3d270309}{import}} use\+Sensor\+Logic from hooks use\+Sensor\+Logic}
+
+
+
+Definition at line \mbox{\hyperlink{_dashboard_screen_8js_source_l00018}{18}} of file \mbox{\hyperlink{_dashboard_screen_8js_source}{Dashboard\+Screen.\+js}}.
+

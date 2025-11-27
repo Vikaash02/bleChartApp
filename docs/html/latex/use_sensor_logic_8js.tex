@@ -1,0 +1,75 @@
+\doxysection{src/hooks/use\+Sensor\+Logic.js File Reference}
+\hypertarget{use_sensor_logic_8js}{}\label{use_sensor_logic_8js}\index{src/hooks/useSensorLogic.js@{src/hooks/useSensorLogic.js}}
+
+
+core business logic for the Medical Sensor interaction.  
+
+
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+function default \mbox{\hyperlink{use_sensor_logic_8js_a58143dc488ac4b55413fadf7590a6eb8}{use\+Sensor\+Logic}} ()
+\begin{DoxyCompactList}\small\item\em Custom hook to manage Sensor state and logic. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{use_sensor_logic_8js_a59be084da8908b7d77ff34b25cd84488}{import}} \{ use\+State, use\+Ref, use\+Effect \} from \textquotesingle{}\mbox{\hyperlink{_sensor_chart_8js_aaed10feaf2dda4314d93c83408affea1}{react}}\textquotesingle{}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+core business logic for the Medical Sensor interaction. 
+
+
+
+Definition in file \mbox{\hyperlink{use_sensor_logic_8js_source}{use\+Sensor\+Logic.\+js}}.
+
+
+
+\label{doc-func-members}
+\Hypertarget{use_sensor_logic_8js_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{use_sensor_logic_8js_a58143dc488ac4b55413fadf7590a6eb8}\index{useSensorLogic.js@{useSensorLogic.js}!useSensorLogic@{useSensorLogic}}
+\index{useSensorLogic@{useSensorLogic}!useSensorLogic.js@{useSensorLogic.js}}
+\doxysubsubsection{\texorpdfstring{useSensorLogic()}{useSensorLogic()}}
+{\footnotesize\ttfamily \label{use_sensor_logic_8js_a58143dc488ac4b55413fadf7590a6eb8} 
+function default use\+Sensor\+Logic (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Custom hook to manage Sensor state and logic. 
+
+\begin{DoxyReturn}{Returns}
+\{Object\} State and functions for the UI. 
+\end{DoxyReturn}
+Initializes the connection sequence. 
+\begin{DoxyParams}{Parameters}
+{\em \{\+Object\}} & scanned\+Device -\/ The BLE device object found during scan.\\
+\hline
+\end{DoxyParams}
+Processes raw Base64 data from BLE. 
+\begin{DoxyParams}{Parameters}
+{\em \{string\}} & base64\+Value\\
+\hline
+\end{DoxyParams}
+Disconnects and cleans up.
+
+Timer loop to update Chart UI every 25ms.
+
+Definition at line \mbox{\hyperlink{use_sensor_logic_8js_source_l00021}{21}} of file \mbox{\hyperlink{use_sensor_logic_8js_source}{use\+Sensor\+Logic.\+js}}.
+
+
+
+\label{doc-var-members}
+\Hypertarget{use_sensor_logic_8js_doc-var-members}
+\doxysubsection{Variable Documentation}
+\Hypertarget{use_sensor_logic_8js_a59be084da8908b7d77ff34b25cd84488}\index{useSensorLogic.js@{useSensorLogic.js}!import@{import}}
+\index{import@{import}!useSensorLogic.js@{useSensorLogic.js}}
+\doxysubsubsection{\texorpdfstring{import}{import}}
+{\footnotesize\ttfamily \label{use_sensor_logic_8js_a59be084da8908b7d77ff34b25cd84488} 
+import \{ use\+State, use\+Ref, use\+Effect \} from \textquotesingle{}\mbox{\hyperlink{_sensor_chart_8js_aaed10feaf2dda4314d93c83408affea1}{react}}\textquotesingle{}}
+
+
+
+Definition at line \mbox{\hyperlink{use_sensor_logic_8js_source_l00006}{6}} of file \mbox{\hyperlink{use_sensor_logic_8js_source}{use\+Sensor\+Logic.\+js}}.
+
