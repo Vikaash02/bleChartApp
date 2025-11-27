@@ -1,7 +1,4 @@
 
-***
-
-```markdown
 # Medical Sensor BLE Bridge (RumaH Protocol)
 
 **Version:** 1.0.0  
