@@ -1,97 +1,192 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
-# Getting Started
+***
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+```markdown
+# Medical Sensor BLE Bridge (RumaH Protocol)
 
-## Step 1: Start Metro
+**Version:** 1.0.0  
+**Framework:** React Native (0.72+)  
+**Target OS:** Android (Active), iOS (Pending)
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 📖 Overview
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+This application acts as a high-performance bridge between a specific Medical BLE Sensor and a mobile interface. It implements the **RumaH Protocol** to handshake with the sensor, configure transmission parameters, and visualize high-frequency (5ms interval) ECG/PPG waveforms in real-time.
 
-```sh
-# Using npm
-npm start
+The project is structured to prioritize performance, using circular buffers and batched state updates to ensure the UI thread remains responsive while processing incoming high-throughput BLE notifications.
 
-# OR using Yarn
-yarn start
+---
+
+## 🛠 Prerequisites
+
+Before starting, ensure your development environment meets the following requirements.
+
+### General
+*   **Node.js:** v18.x or newer (LTS recommended).
+*   **npm:** v9.x or newer.
+*   **Git:** For version control.
+
+### Android Development
+*   **Android Studio:** Hedgehog (2023.1.1) or newer.
+*   **Android SDK:** Android 13 (API 33) or higher.
+*   **Java Development Kit (JDK):** Version 17.
+    *   *Note:* It is highly recommended to use the JDK bundled with Android Studio to avoid `JAVA_HOME` path issues.
+
+### iOS Development (For future implementation)
+*   **macOS:** Sonoma or newer.
+*   **Xcode:** 15.x or newer.
+*   **CocoaPods:** v1.12 or newer.
+
+---
+
+## 🚀 Installation & Setup
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/Vikaash02/bleChartApp.git
+cd bleChartApp
 ```
 
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+### 2. Install Dependencies
+Install the JavaScript libraries.
+```bash
+npm install
 ```
 
-### iOS
+### 3. Environment Configuration (Crucial)
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+#### A. Configure UUIDs
+The application functions will **fail** if the specific sensor UUIDs are not defined. The codebase currently uses placeholders or previously known UUIDs. You must verify these against your specific hardware.
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+1.  Open `src/api/BleProtocol.js`.
+2.  Update the `SENSOR_UUIDS` object:
 
-```sh
-bundle install
+```javascript
+export const SENSOR_UUIDS = {
+  SERVICE: "YOUR_TARGET_SERVICE_UUID",      // e.g., 0000180D...
+  WRITE_CHAR: "YOUR_WRITE_CHARACTERISTIC",  // UUID for sending Commands (0x08, 0x18, etc.)
+  NOTIFY_CHAR: "YOUR_NOTIFY_CHARACTERISTIC" // UUID for receiving Data Packets (0x8E)
+};
 ```
 
-Then, and every time you update your native dependencies, run:
+#### B. Android Environment
+If you haven't configured your `JAVA_HOME` on Windows:
+1.  Open Android Studio.
+2.  Go to **Settings > Build, Execution, Deployment > Build Tools > Gradle**.
+3.  Copy the path under **"Gradle JDK"**.
+4.  Set this path as your system's `JAVA_HOME` environment variable.
 
-```sh
-bundle exec pod install
+---
+
+## 🏃‍♂️ Running the App (Android)
+
+### 1. Start Metro Bundler
+This process bundles the JavaScript code. Keep this terminal open.
+```bash
+npx react-native start
+```
+*Tip: If you encounter caching issues, run `npx react-native start --reset-cache`.*
+
+### 2. Build and Launch
+Open a **new terminal** and run:
+```bash
+npx react-native run-android
+```
+This command compiles the native Android code and installs the app on your connected device or emulator.
+
+---
+
+## 🍎 iOS Implementation Guide (Handover Note)
+
+**Status:** The JavaScript logic is cross-platform, but the native iOS project requires configuration. The next developer must perform the following steps to enable iOS support:
+
+### 1. Install Pods
+On a Mac, navigate to the iOS folder to install native dependencies:
+```bash
+cd ios
+pod install
+cd ..
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+### 2. Configure Permissions (`Info.plist`)
+BLE on iOS requires strict permission strings. Open `ios/BleChartApp/Info.plist` (or via Xcode) and add these keys:
 
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+```xml
+<key>NSBluetoothAlwaysUsageDescription</key>
+<string>We use Bluetooth to connect to the medical sensor for real-time monitoring.</string>
+<key>NSBluetoothPeripheralUsageDescription</key>
+<string>We use Bluetooth to connect to the medical sensor for real-time monitoring.</string>
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+### 3. Build for iOS
+Once configured, run:
+```bash
+npx react-native run-ios
+```
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+---
 
-## Step 3: Modify your app
+## 🏗 Project Architecture
 
-Now that you have successfully run the app, let's make changes!
+The project follows a "Separation of Concerns" pattern to make the code testable and portable.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+```text
+src/
+├── api/             # The Medical Protocol Layer
+│   └── BleProtocol.js  # Command definitions, Packet parsing, Endianness handling
+├── components/      # UI Components
+│   └── SensorChart.js  # Performance-optimized LineChart (downsampled rendering)
+├── hooks/           # Business Logic (The "ViewModel")
+│   └── useSensorLogic.js # Handles the Connection State Machine (Connect -> Handshake -> Stream)
+├── screens/         # View Layer
+│   └── DashboardScreen.js # Main UI (Scan List & Chart view)
+└── utils/           # Helpers
+    └── DataBuffer.js   # Circular buffer logic
+```
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+### Logic Flow
+1.  **Handshake:** `useSensorLogic.js` sends `CMD_SYS_SETTING_SET` (0x08) followed by `CMD_SCAN_START` (0x18).
+2.  **Buffering:** Incoming packets (every ~5ms) are parsed in `BleProtocol.js` and pushed to a `useRef` buffer to avoid blocking the JS thread.
+3.  **Rendering:** A `setInterval` ticks every 25ms to move data from the Buffer to the React State, triggering a Chart update.
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+---
 
-## Congratulations! :tada:
+## 📡 Protocol Reference (RumaH)
 
-You've successfully run and modified your React Native App. :partying_face:
+*See `src/api/BleProtocol.js` for implementation.*
 
-### Now what?
+| Command | Hex | Payload | Description |
+| :--- | :--- | :--- | :--- |
+| **SYS_SETTING_SET** | `0x08` | Mode (0x32), Freq (200) | Configures sensor to RAW mode. |
+| **SCAN_START** | `0x18` | None | Triggers the sensor to start streaming. |
+| **UNSOL_DATA** | `0x8E` | [Header, Data...] | Unsolicited data packet containing waveforms. |
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+**Data Packet Format:**
+*   **Endianness:** Big Endian (MSB First).
+*   **Structure:** 2 sets of (PPG IR [16-bit], PPG Red [16-bit], ECG [16-bit]).
 
-# Troubleshooting
+---
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+## ❓ Troubleshooting
 
-# Learn More
+### `JAVA_HOME` is set to an invalid directory
+Your computer doesn't know where Java is. Point your `JAVA_HOME` environment variable to the `jbr` folder inside your Android Studio installation.
 
-To learn more about React Native, take a look at the following resources:
+### `npm error code ECOMPROMISED`
+Your npm cache is corrupted. Run:
+```bash
+npm cache clean --force
+npm install
+```
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+### App installs but closes immediately
+This is a native crash. Run the log command to see why:
+```bash
+npx react-native log-android
+```
+*Common cause: Missing permissions in AndroidManifest.xml (already fixed in this repo) or missing runtime permissions (User denied Bluetooth).*
+
+### Chart is blank after connection
+1.  Check the Metro terminal logs.
+2.  Verify `SENSOR_UUIDS` in `BleProtocol.js` match the device.
+3.  Verify the sensor is actually sending data (use nRF Connect app to debug).
+```
