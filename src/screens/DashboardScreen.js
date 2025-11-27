@@ -1,6 +1,23 @@
 /**
  * @file DashboardScreen.js
- * @brief Main UI orchestrating scanning and visualization.
+ * @brief Main View Controller for the BLE Medical Sensor Application.
+ * @version 1.2.0
+ * 
+ * @section arch_sec Architecture
+ * This component acts as the **View Layer**. It interacts with the **ViewModel** (`useSensorLogic`)
+ * to drive the UI state. It handles two distinct UI modes:
+ * 1.  **Discovery Mode:** Lists available BLE peripherals.
+ * 2.  **Visualization Mode:** Displays the real-time ECG chart when connected.
+ * 
+ * @section flow_sec UX Flow
+ * - **Init:** Checks Android Permissions (Location/Bluetooth).
+ * - **Scan:** User presses "Scan" -> `bleManager` searches -> List populates.
+ * - **Connect:** User selects device -> `connectAndStart` (in Hook) triggers handshake.
+ * - **Stream:** UI swaps List for `SensorChart` -> Data flows from Hook to Chart.
+ * 
+ * @section perm_sec Permissions
+ * Android 12+ (API 31+) requires `BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT`.
+ * Older Android versions require `ACCESS_FINE_LOCATION`.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -18,7 +35,14 @@ import {
 import useSensorLogic from '../hooks/useSensorLogic';
 import SensorChart from '../components/SensorChart';
 
+/**
+ * @brief The Root Screen Component.
+ */
 export default function DashboardScreen() {
+  /**
+   * @brief Destructure state and logic from the Custom Hook (ViewModel).
+   * @see useSensorLogic.js
+   */
   const { 
     device, 
     status, 
@@ -28,11 +52,15 @@ export default function DashboardScreen() {
     stopAndDisconnect 
   } = useSensorLogic();
 
+  /** @brief Local state for the list of discovered peripherals. */
   const [scannedDevices, setScannedDevices] = useState([]);
+  
+  /** @brief UI state to disable the Scan button while operation is in progress. */
   const [isScanning, setIsScanning] = useState(false);
 
   /**
-   * @brief Requests Android Permissions.
+   * @brief Requests necessary runtime permissions based on Android API level.
+   * @note This is a prerequisite for scanning. If denied, scanning will silently fail.
    */
   const requestPermissions = async () => {
     if (Platform.OS === 'android') {
@@ -45,7 +73,13 @@ export default function DashboardScreen() {
   };
 
   /**
-   * @brief Starts BLE Scanning.
+   * @brief Executes a 10-second BLE Scan.
+   * 
+   * @details 
+   * 1. Clears previous results.
+   * 2. Starts the `bleManager` scanner.
+   * 3. Filters duplicates (by Device ID).
+   * 4. Auto-stops after 10,000ms to conserve battery.
    */
   const startScan = async () => {
     await requestPermissions();
@@ -54,11 +88,14 @@ export default function DashboardScreen() {
     
     bleManager.startDeviceScan(null, null, (error, scannedDevice) => {
       if (error) {
-        console.warn(error);
+        console.warn("Scan Error:", error);
         return;
       }
-      if (scannedDevice && scannedDevice.name) {
+      
+      // Filter logic: Only add if the device object exists
+      if (scannedDevice) {
         setScannedDevices(prev => {
+            // Duplication check: Prevent adding the same MAC address twice
             if (!prev.some(d => d.id === scannedDevice.id)) {
                 return [...prev, scannedDevice];
             }
@@ -67,7 +104,7 @@ export default function DashboardScreen() {
       }
     });
 
-    // Auto-stop scan after 10 seconds
+    // Timer to stop scanning automatically
     setTimeout(() => {
         bleManager.stopDeviceScan();
         setIsScanning(false);
@@ -75,18 +112,25 @@ export default function DashboardScreen() {
   };
 
   /**
-   * @brief Handles device selection from list.
-   * @param {Object} item - The BLE device.
+   * @brief Interaction Handler: User taps a device in the list.
+   * @param {Object} item - The `Device` object provided by react-native-ble-plx.
    */
   const onDevicePress = (item) => {
+    // Always stop scanning before connecting to ensure radio stability
     bleManager.stopDeviceScan();
     setIsScanning(false);
+    
+    // Trigger the handshake sequence in the hook
     connectAndStart(item);
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* 
+        Header Section:
+        Displays current connection status (e.g., "Streaming", "Connecting")
+        and the Disconnect button when active.
+      */}
       <View style={styles.header}>
         <Text style={styles.statusText}>Status: {status}</Text>
         {device && (
@@ -94,7 +138,11 @@ export default function DashboardScreen() {
         )}
       </View>
 
-      {/* Main Content: Chart or Scan List */}
+      {/* 
+        Conditional Content Rendering:
+        - IF connected: Show the Real-time Chart.
+        - ELSE: Show the Scan Button and Device List.
+      */}
       {device ? (
         <View style={styles.chartContainer}>
            <SensorChart data={ecgData} title="ECG Signal (Real-time)" />
@@ -111,8 +159,10 @@ export default function DashboardScreen() {
                 keyExtractor={item => item.id}
                 renderItem={({ item }) => (
                     <TouchableOpacity style={styles.deviceItem} onPress={() => onDevicePress(item)}>
-                        <Text style={styles.deviceName}>{item.name}</Text>
+                        {/* Fallback to "Unknown" if the device doesn't advertise a local name */}
+                        <Text style={styles.deviceName}>{item.name || "Unknown Device"}</Text>
                         <Text style={styles.deviceId}>{item.id}</Text>
+                        <Text style={styles.rssi}>RSSI: {item.rssi}</Text>
                     </TouchableOpacity>
                 )}
             />
@@ -130,5 +180,6 @@ const styles = StyleSheet.create({
   listContainer: { padding: 20, flex: 1 },
   deviceItem: { padding: 15, borderBottomWidth: 1, borderColor: '#eee', backgroundColor: '#f9f9f9', marginBottom: 5 },
   deviceName: { fontSize: 16, fontWeight: 'bold' },
-  deviceId: { fontSize: 12, color: 'gray' }
+  deviceId: { fontSize: 12, color: 'gray' },
+  rssi: { fontSize: 10, color: 'blue', marginTop: 2 }
 });
