@@ -133,28 +133,47 @@ export default function useSensorLogic() {
     }
   };
 
-  /**
-   * @brief Handles generic data packets (1 to N channels).
+   /**
+   * @brief Handles incoming packets and de-interleaves CQ11 data.
    * 
    * @details 
-   * 1. Parses the packet into a flat array of integers.
-   * 2. Iterates through the array.
-   * 3. Pushes each value to its corresponding buffer index.
-   *    (e.g., Value at index 0 goes to Buffer[0]).
+   * CQ11 sends: [IR1, Red1, ECG1, IR2, Red2, ECG2]
+   * We want to map:
+   * - IR1 and IR2 -> Channel 0
+   * - Red1 and Red2 -> Channel 1
+   * - ECG1 and ECG2 -> Channel 2
    */
   const handleIncomingData = (base64Value) => {
     const values = parseNotification(base64Value);
     
-    if (values && values.length > 0) {
-      values.forEach((val, index) => {
-        // Initialize buffer for this channel if it doesn't exist
-        if (!dataBuffersRef.current[index]) {
-          dataBuffersRef.current[index] = [];
-        }
-        // Push value
-        dataBuffersRef.current[index].push(val);
-      });
+    // Check if this looks like a standard CQ11 packet (6 values)
+    if (values && values.length === 6) {
+      const channelCount = 3; // We really only have 3 sensors
+
+      // Set 1 (Time T)
+      pushToBuffer(0, values[0]); // IR
+      pushToBuffer(1, values[1]); // Red
+      pushToBuffer(2, values[2]); // ECG
+
+      // Set 2 (Time T+5ms)
+      pushToBuffer(0, values[3]); // IR
+      pushToBuffer(1, values[4]); // Red
+      pushToBuffer(2, values[5]); // ECG
+    } 
+    // Fallback for non-standard packets (Generic mode)
+    else if (values && values.length > 0) {
+       values.forEach((val, index) => {
+          pushToBuffer(index, val);
+       });
     }
+  };
+
+  // Helper to push to the ref safely
+  const pushToBuffer = (channelIndex, value) => {
+    if (!dataBuffersRef.current[channelIndex]) {
+      dataBuffersRef.current[channelIndex] = [];
+    }
+    dataBuffersRef.current[channelIndex].push(value);
   };
 
   /**

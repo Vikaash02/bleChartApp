@@ -49,7 +49,7 @@ export const SENSOR_UUIDS = {
    * Used to receive the 0x8E Unsolicited Data packets.
    * Property: NOTIFY.
    */
-  NOTIFY_CHAR: "00002902-5555-8888-2299-ba0987654321",
+  NOTIFY_CHAR: "0000CCCC-5555-8888-2299-ba0987654321",
 };
 /** @} */ // End of UUIDs group
 
@@ -161,7 +161,7 @@ export const parseNotification = (base64Data) => {
   // Check for RumaH Unsolicited Header (0x8E)
   if (buffer.length > 0 && buffer[0] === COMMANDS.RES_SYS_UNSOLICITED) {
     // RumaH usually has Header (1 byte) + Length/Type (1 byte) = 2 bytes overhead
-    offset = 2; 
+    offset = 1; // Start reading data after header 
   }
 
   // Step 2: Dynamic Loop
